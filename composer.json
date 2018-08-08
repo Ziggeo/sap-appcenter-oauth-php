@@ -1,0 +1,17 @@
+{
+    "name": "ziggeo/sap-appcenter-oauth-php",
+    "require": {
+        "league/oauth1-client": "^1.7"
+    },
+    "authors": [
+        {
+            "name": "Pablo Iglesias",
+            "email": "pablo.iglesias02@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Sap\\OAuth\\": "lib/"
+        }
+    }
+}
