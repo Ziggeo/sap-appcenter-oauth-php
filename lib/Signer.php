@@ -1,18 +1,19 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pablo-i
- * Date: 08/08/18
- * Time: 11:15
- */
 
 namespace Sap\OAuth;
 
-class Signer extends SapOAuth {
+class Signer extends SapServer {
 
-	public function signUrl($data, $uri, $method = "GET") {
+	public function signUrl($uri, $params, $method) {
 		$signature = $this->getSignature();
-		$signed = $signature->sign($uri, $data, $method);
+		$signed = $signature->sign($uri, $params, $method);
 		return $signed;
 	}
+
+	public function signRequest($uri, $method = "GET") {
+		$params = $this->baseProtocolParameters();
+		$params["oauth_signature"] = $this->signUrl($uri, $params, $method);
+		return $params;
+	}
+
 }
