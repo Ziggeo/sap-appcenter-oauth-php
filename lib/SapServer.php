@@ -2,7 +2,10 @@
 
 namespace Sap\OAuth;
 
+use GuzzleHttp\Exception\BadResponseException;
+use League\OAuth1\Client\Credentials\ClientCredentialsInterface;
 use League\OAuth1\Client\Credentials\ClientCredentials;
+use League\OAuth1\Client\Credentials\CredentialsInterface;
 use League\OAuth1\Client\Credentials\TokenCredentials;
 use League\OAuth1\Client\Server\Server;
 use League\OAuth1\Client\Server\User;
@@ -45,4 +48,83 @@ class SapServer extends Server {
 		// TODO: Implement userScreenName() method.
 	}
 
+	public function getEventData($url, $type = "json") {
+		$client = $this->createHttpClient();
+
+		$headers = $this->getHeaders($this->getClientCredentials(), 'GET', $url);
+
+		try {
+			$response = $client->get($url, [
+				'headers' => $headers,
+			]);
+		} catch (BadResponseException $e) {
+			$response = $e->getResponse();
+			$body = $response->getBody();
+			$statusCode = $response->getStatusCode();
+
+			throw new \Exception(
+				"Received error [$body] with status code [$statusCode] when retrieving token credentials."
+			);
+		}
+
+		switch ($type) {
+			case 'json':
+				$resp = json_decode((string) $response->getBody(), true);
+				break;
+
+			case 'xml':
+				$resp = simplexml_load_string((string) $response->getBody());
+				break;
+			default:
+				throw new \InvalidArgumentException("Invalid response type [{$this->responseType}].");
+		}
+
+		return $resp;
+	}
+	/**
+	 * Generate the OAuth protocol header for requests other than temporary
+	 * credentials, based on the URI, method, given credentials & body query
+	 * string.
+	 *
+	 * @param string               $method
+	 * @param string               $uri
+	 * @param CredentialsInterface $credentials
+	 * @param array                $bodyParameters
+	 *
+	 * @return string
+	 */
+	protected function protocolHeader($method, $uri, CredentialsInterface $credentials, array $bodyParameters = array())
+	{
+		$parameters = array_merge(
+			$this->baseProtocolParameters(),
+			$this->additionalProtocolParameters()
+		);
+
+		//$this->signature->setCredentials($credentials);
+
+		$parameters['oauth_signature'] = $this->signature->sign(
+			$uri,
+			array_merge($parameters, $bodyParameters),
+			$method
+		);
+
+		return $this->normalizeProtocolParameters($parameters);
+	}
+
+	/**
+	 * Takes an array of protocol parameters and normalizes them
+	 * to be used as a HTTP header.
+	 *
+	 * @param array $parameters
+	 *
+	 * @return string
+	 */
+	protected function normalizeProtocolParameters(array $parameters)
+	{
+		array_walk($parameters, function (&$value, $key) {
+			$value = rawurlencode($key).'="'.rawurlencode($value).'"';
+		});
+
+		return 'OAuth '.implode(',', $parameters);
+	}
 }
