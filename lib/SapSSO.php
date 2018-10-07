@@ -82,7 +82,7 @@ class SapSSO {
         }
     }
 
-    public function complete_sso($account_id = "") {
+    public function complete_sso() {
         $consumer = new Auth_OpenID_Consumer($this->store);
         $return_to = $this->return_to;
         $url_parts = parse_url($_SERVER['REQUEST_URI']);
@@ -100,33 +100,20 @@ class SapSSO {
             // identity URL and Simple Registration data (if it was
             // returned).
             $openid = $response->getDisplayIdentifier();
-            $esc_identity = htmlentities($openid);
-
-            $success = sprintf('You have successfully verified ' .
-                '<a href="%s">%s</a> as your identity.',
-                $esc_identity, $esc_identity);
 
             $sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($response);
 
             $sreg = $sreg_resp->contents();
 
-            if (@$sreg['email']) {
-                $success .= "  You also returned '".htmlentities($sreg['email']).
-                    "' as your email.";
-            }
-
-            if (@$sreg['nickname']) {
-                $success .= "  Your nickname is '".htmlentities($sreg['nickname']).
-                    "'.";
-            }
-
-            if (@$sreg['fullname']) {
-                $success .= "  Your fullname is '".htmlentities($sreg['fullname']).
-                    "'.";
-            }
             //TODO END THIS
             $ax = new Auth_OpenID_AX_FetchResponse();
             $obj = $ax->fromSuccessResponse($response);
+
+            array_merge($sreg, $obj->data);
+
+            return $sreg;
         }
+
+        return $msg;
     }
 }
