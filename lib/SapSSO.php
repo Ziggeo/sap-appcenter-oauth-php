@@ -9,6 +9,7 @@ use Auth_OpenID_AX_FetchRequest;
 use Auth_OpenID_AX_FetchResponse;
 use Auth_OpenID_SRegRequest;
 use Auth_OpenID_SRegResponse;
+use Exception;
 use Auth_OpenID;
 
 
@@ -16,10 +17,12 @@ class SapSSO {
 
     private $store;
     private $return_to;
+    private $trust_root;
 
-    function __construct($store_secret, $return_to) {
+    function __construct($store_secret, $return_to, $trust_root = "") {
         $this->store = new Auth_OpenID_DumbStore($store_secret);
         $this->return_to = $return_to;
+        $this->trust_root = $trust_root;
     }
 
     public function initialize_sso($openid, $account_id = NULL) {
@@ -29,7 +32,7 @@ class SapSSO {
 
         // No auth request means we can't begin OpenID.
         if (!$auth_request) {
-            throw new ServiceDataException("Authentication error; not a valid OpenID.");
+            throw new Exception("Authentication error; not a valid OpenID.");
         }
 
         $sreg_request = Auth_OpenID_SRegRequest::build(
@@ -121,23 +124,9 @@ class SapSSO {
                 $success .= "  Your fullname is '".htmlentities($sreg['fullname']).
                     "'.";
             }
-
+            //TODO END THIS
             $ax = new Auth_OpenID_AX_FetchResponse();
             $obj = $ax->fromSuccessResponse($response);
-            var_dump($obj);
         }
-        var_dump($success);
-    }
-
-    private static function getScheme() {
-        return "https";
-    }
-
-    private static function getReturnTo($account_identifier = '') {
-        return "https://515a60e6.ngrok.io/v1/sap/sso/complete_login/" . $account_identifier;
-    }
-
-    private static function getTrustRoot() {
-        return "https://515a60e6.ngrok.io/";
     }
 }
