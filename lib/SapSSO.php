@@ -70,7 +70,7 @@ class SapSSO {
 
         // Generate form markup and render it.
         $form_id = 'openid_message';
-        $form_html = $auth_request->htmlMarkup(self::getTrustRoot(), $this->return_to,
+        $form_html = $auth_request->htmlMarkup($this->trust_root, $this->return_to,
             false, array('id' => $form_id));
 
         // Display an error if the form markup couldn't be generated;
