@@ -105,12 +105,11 @@ class SapSSO {
 
             $sreg = $sreg_resp->contents();
 
-            //TODO END THIS
             $ax = new Auth_OpenID_AX_FetchResponse();
             $obj = $ax->fromSuccessResponse($response);
 
             array_merge($sreg, $obj->data);
-
+            $sreg["openid"] = $openid;
             return $sreg;
         }
 
