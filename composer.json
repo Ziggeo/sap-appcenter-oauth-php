@@ -1,9 +1,10 @@
 {
     "name": "ziggeo/sap-appcenter-oauth-php",
-    "version" : "0.0.3",
+    "version" : "0.0.4",
     "require": {
+        "php": ">=7.1.0",
         "league/oauth1-client": "^1.7",
-        "openid/php-openid": "^2.3"
+        "openid/php-openid": "dev-master"
     },
     "authors": [
         {
