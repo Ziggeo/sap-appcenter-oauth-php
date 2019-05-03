@@ -25,62 +25,66 @@ class SapSSO {
         $this->trust_root = $trust_root;
     }
 
-    public function initialize_sso($openid, $account_id = NULL) {
-        $consumer = new Auth_OpenID_Consumer($this->store);
-        // Begin the OpenID authentication process.
-        $auth_request = $consumer->begin($openid);
+	public function initialize_sso($openid, $account_id = NULL, $just_form = FALSE) {
+		$consumer = new Auth_OpenID_Consumer($this->store);
+		// Begin the OpenID authentication process.
+		$auth_request = $consumer->begin($openid);
 
-        // No auth request means we can't begin OpenID.
-        if (!$auth_request) {
-            throw new Exception("Authentication error; not a valid OpenID.");
-        }
+		// No auth request means we can't begin OpenID.
+		if (!$auth_request) {
+			throw new Exception("Authentication error; not a valid OpenID.");
+		}
 
-        $sreg_request = Auth_OpenID_SRegRequest::build(
-        // Required
-            array(),
-            // Optional
-            array('fullname', 'email'));
+		$sreg_request = Auth_OpenID_SRegRequest::build(
+		// Required
+			array(),
+			// Optional
+			array('fullname', 'email'));
 
-        if ($sreg_request) {
-            $auth_request->addExtension($sreg_request);
-        }
+		if ($sreg_request) {
+			$auth_request->addExtension($sreg_request);
+		}
 
-        // Create attribute request object
+		// Create attribute request object
 
-        $attribute[] = Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson/first',1,0);
-        $attribute[] = Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson/last',1,0);
-        $attribute[] = Auth_OpenID_AX_AttrInfo::make('http://nextgen.sapappcenter.com/schema/company/uuid',1,0);
+		$attribute[] = Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson/first', 1, 0);
+		$attribute[] = Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson/last', 1, 0);
+		$attribute[] = Auth_OpenID_AX_AttrInfo::make('http://nextgen.sapappcenter.com/schema/company/uuid', 1, 0);
 
-// Create AX fetch request
-        $ax = new Auth_OpenID_AX_FetchRequest;
+		// Create AX fetch request
+		$ax = new Auth_OpenID_AX_FetchRequest;
 
-// Add attributes to AX fetch request
-        foreach($attribute as $attr){
-            $ax->add($attr);
-        }
+		// Add attributes to AX fetch request
+		foreach ($attribute as $attr) {
+			$ax->add($attr);
+		}
 
-// Add AX fetch request to authentication request
-        $auth_request->addExtension($ax);
+		// Add AX fetch request to authentication request
+		$auth_request->addExtension($ax);
 
-        // Redirect the user to the OpenID server for authentication.
-        // Store the token for this authentication so we can verify the
-        // response.
+		// Redirect the user to the OpenID server for authentication.
+		// Store the token for this authentication so we can verify the
+		// response.
 
-        // For OpenID 2, use a Javascrip form to send a POST request to the server.
+		// For OpenID 2, use a Javascript form to send a POST request to the server.
+		// Generate form markup and render it.
+		$form_id = 'openid_message';
+		if (!$just_form) {
+			$form_html = $auth_request->htmlMarkup($this->trust_root, $this->return_to,
+				FALSE, array('id' => $form_id));
+		} else {
+			$form_html = $auth_request->formMarkup($this->trust_root, $this->return_to,
+				FALSE, array('id' => $form_id));
+		}
 
-        // Generate form markup and render it.
-        $form_id = 'openid_message';
-        $form_html = $auth_request->htmlMarkup($this->trust_root, $this->return_to,
-            false, array('id' => $form_id));
-
-        // Display an error if the form markup couldn't be generated;
-        // otherwise, render the HTML.
-        if (Auth_OpenID::isFailure($form_html)) {
-            displayError("Could not redirect to server: " . $form_html->message);
-        } else {
-            print $form_html;
-        }
-    }
+		// Display an error if the form markup couldn't be generated;
+		// otherwise, render the HTML.
+		if (Auth_OpenID::isFailure($form_html)) {
+			displayError("Could not redirect to server: " . $form_html->message);
+		} else {
+			return $form_html;
+		}
+	}
 
     public function complete_sso() {
         $consumer = new Auth_OpenID_Consumer($this->store);
@@ -108,7 +112,7 @@ class SapSSO {
             $ax = new Auth_OpenID_AX_FetchResponse();
             $obj = $ax->fromSuccessResponse($response);
 
-            array_merge($sreg, $obj->data);
+            array_merge($sreg, $obj->getExtensionArgs());
             $sreg["openid"] = $openid;
             return $sreg;
         }
